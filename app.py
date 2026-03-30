@@ -19,7 +19,7 @@ def load_corpus():
 
 vocabulary, unigram_counts = load_corpus()
 
-# ====================== MIN EDIT DISTANCE ======================
+# ====================== SPELL CORRECTOR ======================
 def min_edit_distance(word1, word2):
     m, n = len(word1), len(word2)
     dp = [[0] * (n + 1) for _ in range(m + 1)]
@@ -31,7 +31,6 @@ def min_edit_distance(word1, word2):
             dp[i][j] = min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + cost)
     return dp[m][n]
 
-# ====================== SPELL CORRECTOR ======================
 def correct_spelling(misspelled_word):
     special_rules = {"مین": "میں", "نی": "نے", "مینں": "میں", "نیی": "نے", "مں": "میں"}
     
@@ -60,38 +59,41 @@ def correct_spelling(misspelled_word):
     best_word, best_dist, _, _ = candidates[0]
     return best_word, best_dist, "Corrected"
 
-# ====================== STREAMLIT UI ======================
+# ====================== STREAMLIT APP ======================
 st.set_page_config(page_title="اردو اسپیل چیکر", layout="centered", page_icon="🧠")
 
 st.title("🧠 اردو اسپیل چیکر")
 st.markdown("**Minimum Edit Distance** کے ذریعے اردو ٹیکسٹ کی غلطیاں درست کریں")
 
 # Text Input
+if 'input_text' not in st.session_state:
+    st.session_state.input_text = ""
+
 input_text = st.text_area(
     "اردو متن درج کریں:", 
+    value=st.session_state.input_text,
     placeholder="مثال: مین نی کھانا کھا لیا ہے",
-    height=130,
-    key="main_input"
+    height=130
 )
 
 # Check Button
 if st.button("✅ Spelling Check کریں", type="primary", use_container_width=True):
-    if input_text and input_text.strip():
+    if input_text.strip():
         words = input_text.strip().split()
-        corrected_list = []
+        corrected = []
         details = []
 
         for word in words:
             fixed, dist, status = correct_spelling(word)
             if status in ["Corrected", "Special Rule"]:
-                corrected_list.append(fixed)
+                corrected.append(fixed)
                 details.append(f"❌ {word} → ✅ {fixed} (dist={dist})")
             else:
-                corrected_list.append(word)
+                corrected.append(word)
                 details.append(f"✅ {word} (صحیح)")
 
         st.success("**درست شدہ جملہ:**")
-        st.write(" ".join(corrected_list))
+        st.write(" ".join(corrected))
 
         st.subheader("تفصیلی رپورٹ")
         for d in details:
@@ -100,7 +102,7 @@ if st.button("✅ Spelling Check کریں", type="primary", use_container_width=
         st.warning("براہ مہربانی کچھ متن درج کریں۔")
 
 # ====================== EXAMPLES ======================
-st.subheader("📌 مثالیں (Click karein)")
+st.subheader("📌 مثالیں")
 
 examples = [
     "مین نی کھانا کھا لیا ہے",
@@ -110,14 +112,15 @@ examples = [
     "اسلآم میں قرآن پڑھتا ہوں"
 ]
 
-# Create buttons in columns
-cols = st.columns(3)
+# Callback function
+def set_example(text):
+    st.session_state.input_text = text
 
-for idx, example in enumerate(examples):
-    col = cols[idx % 3]
-    if col.button(example, key=f"example_{idx}"):
-        st.session_state.main_input = example   # Yeh line fix hai
-        st.rerun()
+# Display buttons
+cols = st.columns(3)
+for i, ex in enumerate(examples):
+    col = cols[i % 3]
+    col.button(ex, key=f"ex_{i}", on_click=set_example, args=(ex,))
 
 # Footer
 st.caption("Final Semester Project | FA23-BAI-007 - Aftab Ahmad")
