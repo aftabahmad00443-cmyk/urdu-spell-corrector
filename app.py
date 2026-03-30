@@ -66,36 +66,32 @@ st.set_page_config(page_title="اردو اسپیل چیکر", layout="centered",
 st.title("🧠 اردو اسپیل چیکر")
 st.markdown("**Minimum Edit Distance** کے ذریعے اردو ٹیکسٹ کی غلطیاں درست کریں")
 
-# Text Input with session state
-if "input_text" not in st.session_state:
-    st.session_state.input_text = ""
-
+# Text Input
 input_text = st.text_area(
     "اردو متن درج کریں:", 
-    value=st.session_state.input_text,
     placeholder="مثال: مین نی کھانا کھا لیا ہے",
-    height=120,
-    key="text_input"
+    height=130,
+    key="main_input"
 )
 
 # Check Button
 if st.button("✅ Spelling Check کریں", type="primary", use_container_width=True):
-    if input_text.strip():
+    if input_text and input_text.strip():
         words = input_text.strip().split()
-        corrected = []
+        corrected_list = []
         details = []
 
         for word in words:
             fixed, dist, status = correct_spelling(word)
             if status in ["Corrected", "Special Rule"]:
-                corrected.append(fixed)
+                corrected_list.append(fixed)
                 details.append(f"❌ {word} → ✅ {fixed} (dist={dist})")
             else:
-                corrected.append(word)
+                corrected_list.append(word)
                 details.append(f"✅ {word} (صحیح)")
 
         st.success("**درست شدہ جملہ:**")
-        st.write(" ".join(corrected))
+        st.write(" ".join(corrected_list))
 
         st.subheader("تفصیلی رپورٹ")
         for d in details:
@@ -103,7 +99,7 @@ if st.button("✅ Spelling Check کریں", type="primary", use_container_width=
     else:
         st.warning("براہ مہربانی کچھ متن درج کریں۔")
 
-# ====================== EXAMPLES (Fixed Version) ======================
+# ====================== EXAMPLES ======================
 st.subheader("📌 مثالیں (Click karein)")
 
 examples = [
@@ -114,13 +110,14 @@ examples = [
     "اسلآم میں قرآن پڑھتا ہوں"
 ]
 
+# Create buttons in columns
 cols = st.columns(3)
 
-for i, ex in enumerate(examples):
-    col = cols[i % 3]
-    if col.button(ex, key=f"btn_{i}"):
-        st.session_state.input_text = ex
+for idx, example in enumerate(examples):
+    col = cols[idx % 3]
+    if col.button(example, key=f"example_{idx}"):
+        st.session_state.main_input = example   # Yeh line fix hai
         st.rerun()
 
 # Footer
-st.caption("Developed as Final Semester Project | FA23-BAI-007 - Aftab Ahmad")
+st.caption("Final Semester Project | FA23-BAI-007 - Aftab Ahmad")
