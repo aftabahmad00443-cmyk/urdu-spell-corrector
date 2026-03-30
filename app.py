@@ -61,18 +61,21 @@ def correct_spelling(misspelled_word):
     return best_word, best_dist, "Corrected"
 
 # ====================== STREAMLIT UI ======================
-st.set_page_config(page_title="اردو اسپیل چیکر", layout="centered")
+st.set_page_config(page_title="اردو اسپیل چیکر", layout="centered", page_icon="🧠")
 
 st.title("🧠 اردو اسپیل چیکر")
 st.markdown("**Minimum Edit Distance** کے ذریعے اردو ٹیکسٹ کی غلطیاں درست کریں")
 
+# Text Input
 input_text = st.text_area(
     "اردو متن درج کریں:", 
-    placeholder="مین نی کھانا کھا لیا ہے",
-    height=150
+    placeholder="مثال: مین نی کھانا کھا لیا ہے",
+    height=120,
+    key="input_box"
 )
 
-if st.button("✅ Spelling Check کریں", type="primary"):
+# Check Button
+if st.button("✅ Spelling Check کریں", type="primary", use_container_width=True):
     if input_text.strip():
         words = input_text.strip().split()
         corrected = []
@@ -96,16 +99,24 @@ if st.button("✅ Spelling Check کریں", type="primary"):
     else:
         st.warning("براہ مہربانی کچھ متن درج کریں۔")
 
-# Examples
-st.subheader("مثالیں")
+# ====================== EXAMPLES (Fixed) ======================
+st.subheader("📌 مثالیں (Click karein)")
+
 examples = [
     "مین نی کھانا کھا لیا ہے",
     "حکومٹ نے اعلان کیا ہے",
     "پاکستانن ایک خوبصورت ملک ہے",
-    "تعلییم بہت اہم ہے"
+    "تعلییم بہت اہم ہے",
+    "اسلآم میں قرآن پڑھتا ہوں"
 ]
 
-for ex in examples:
-    if st.button(ex):
-        input_text = ex
+cols = st.columns(3)
+
+for i, ex in enumerate(examples):
+    col = cols[i % 3]
+    if col.button(ex, key=f"ex_{i}"):
+        st.session_state.input_box = ex   # Yeh line important hai
         st.rerun()
+
+# Footer
+st.caption("Developed as Final Semester Project | FA23-BAI-007 - Aftab Ahmad")
