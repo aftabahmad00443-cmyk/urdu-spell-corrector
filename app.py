@@ -66,12 +66,16 @@ st.set_page_config(page_title="اردو اسپیل چیکر", layout="centered",
 st.title("🧠 اردو اسپیل چیکر")
 st.markdown("**Minimum Edit Distance** کے ذریعے اردو ٹیکسٹ کی غلطیاں درست کریں")
 
-# Text Input
+# Text Input with session state
+if "input_text" not in st.session_state:
+    st.session_state.input_text = ""
+
 input_text = st.text_area(
     "اردو متن درج کریں:", 
+    value=st.session_state.input_text,
     placeholder="مثال: مین نی کھانا کھا لیا ہے",
     height=120,
-    key="input_box"
+    key="text_input"
 )
 
 # Check Button
@@ -99,7 +103,7 @@ if st.button("✅ Spelling Check کریں", type="primary", use_container_width=
     else:
         st.warning("براہ مہربانی کچھ متن درج کریں۔")
 
-# ====================== EXAMPLES (Fixed) ======================
+# ====================== EXAMPLES (Fixed Version) ======================
 st.subheader("📌 مثالیں (Click karein)")
 
 examples = [
@@ -114,8 +118,8 @@ cols = st.columns(3)
 
 for i, ex in enumerate(examples):
     col = cols[i % 3]
-    if col.button(ex, key=f"ex_{i}"):
-        st.session_state.input_box = ex   # Yeh line important hai
+    if col.button(ex, key=f"btn_{i}"):
+        st.session_state.input_text = ex
         st.rerun()
 
 # Footer
