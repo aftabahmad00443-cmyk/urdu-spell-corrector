@@ -1,22 +1,25 @@
+import streamlit as st
 import collections
-import os
-import gradio as gr
 
-# Load the Urdu corpus
-file_path = "cleaned.txt"
+# ====================== LOAD CORPUS ======================
+@st.cache_data
+def load_corpus():
+    file_path = "cleaned.txt"
+    try:
+        with open(file_path, 'r', encoding='utf-16') as f:
+            text = f.read()
+    except:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            text = f.read()
+    
+    tokens = text.split()
+    unigram_counts = collections.Counter(tokens)
+    vocabulary = set(unigram_counts.keys())
+    return vocabulary, unigram_counts
 
-try:
-    with open(file_path, 'r', encoding='utf-16') as f:
-        text = f.read()
-except:
-    with open(file_path, 'r', encoding='utf-8') as f:
-        text = f.read()
+vocabulary, unigram_counts = load_corpus()
 
-tokens = text.split()
-unigram_counts = collections.Counter(tokens)
-vocabulary = set(unigram_counts.keys())
-
-# Minimum Edit Distance Function
+# ====================== MIN EDIT DISTANCE ======================
 def min_edit_distance(word1, word2):
     m, n = len(word1), len(word2)
     dp = [[0] * (n + 1) for _ in range(m + 1)]
@@ -28,10 +31,10 @@ def min_edit_distance(word1, word2):
             dp[i][j] = min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + cost)
     return dp[m][n]
 
-# Spell Corrector Function
+# ====================== SPELL CORRECTOR ======================
 def correct_spelling(misspelled_word):
-    # Special Urdu rules
     special_rules = {"مین": "میں", "نی": "نے", "مینں": "میں", "نیی": "نے", "مں": "میں"}
+    
     if misspelled_word in special_rules:
         suggested = special_rules[misspelled_word]
         if suggested in vocabulary:
@@ -54,49 +57,55 @@ def correct_spelling(misspelled_word):
         return misspelled_word, 0, "No suggestion"
 
     candidates.sort(key=lambda x: (x[1], -x[2]))
-    best_word, best_dist, best_freq, _ = candidates[0]
+    best_word, best_dist, _, _ = candidates[0]
     return best_word, best_dist, "Corrected"
 
-# Gradio Interface Function
-def spell_check_interface(input_text):
-    if not input_text or not input_text.strip():
-        return "براہ مہربانی کچھ اردو متن درج کریں۔", ""
+# ====================== STREAMLIT UI ======================
+st.set_page_config(page_title="اردو اسپیل چیکر", layout="centered")
 
-    words = input_text.strip().split()
-    corrected = []
-    details = []
+st.title("🧠 اردو اسپیل چیکر")
+st.markdown("**Minimum Edit Distance** کے ذریعے اردو ٹیکسٹ کی غلطیاں درست کریں")
 
-    for word in words:
-        fixed, dist, status = correct_spelling(word)
-        if status in ["Corrected", "Special Rule"]:
-            corrected.append(fixed)
-            details.append(f"❌ {word} → ✅ {fixed} (dist={dist})")
-        else:
-            corrected.append(word)
-            details.append(f"✅ {word} (صحیح)")
+input_text = st.text_area(
+    "اردو متن درج کریں:", 
+    placeholder="مین نی کھانا کھا لیا ہے",
+    height=150
+)
 
-    return " ".join(corrected), "\n".join(details)
+if st.button("✅ Spelling Check کریں", type="primary"):
+    if input_text.strip():
+        words = input_text.strip().split()
+        corrected = []
+        details = []
 
-# Gradio UI
-with gr.Blocks(title="اردو اسپیل چیکر", theme=gr.themes.Soft()) as demo:
-    gr.Markdown("# 🧠 اردو اسپیل چیکر\n**Minimum Edit Distance** سے اردو کی غلطیاں درست کریں")
+        for word in words:
+            fixed, dist, status = correct_spelling(word)
+            if status in ["Corrected", "Special Rule"]:
+                corrected.append(fixed)
+                details.append(f"❌ {word} → ✅ {fixed} (dist={dist})")
+            else:
+                corrected.append(word)
+                details.append(f"✅ {word} (صحیح)")
 
-    with gr.Row():
-        inp = gr.Textbox(label="اردو متن درج کریں", placeholder="مین نی کھانا کھا لیا ہے", lines=3, rtl=True)
-        btn = gr.Button("✅ Check کریں", variant="primary")
+        st.success("**درست شدہ جملہ:**")
+        st.write(" ".join(corrected))
 
-    with gr.Row():
-        out1 = gr.Textbox(label="✅ درست شدہ جملہ", rtl=True)
-        out2 = gr.Textbox(label="تفصیل", lines=6, rtl=True)
+        st.subheader("تفصیلی رپورٹ")
+        for d in details:
+            st.write(d)
+    else:
+        st.warning("براہ مہربانی کچھ متن درج کریں۔")
 
-    btn.click(spell_check_interface, inputs=inp, outputs=[out1, out2])
+# Examples
+st.subheader("مثالیں")
+examples = [
+    "مین نی کھانا کھا لیا ہے",
+    "حکومٹ نے اعلان کیا ہے",
+    "پاکستانن ایک خوبصورت ملک ہے",
+    "تعلییم بہت اہم ہے"
+]
 
-    gr.Examples([
-        ["مین نی کھانا کھا لیا ہے"],
-        ["حکومٹ نے اعلان کیا ہے"],
-        ["پاکستانن ایک اچھا ملک ہے"]
-    ], inputs=inp)
-
-# Important for deployment
-if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=int(os.getenv("PORT", 7860)))
+for ex in examples:
+    if st.button(ex):
+        input_text = ex
+        st.rerun()
