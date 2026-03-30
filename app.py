@@ -59,80 +59,50 @@ def correct_spelling(misspelled_word):
     best_word, best_dist, _, _ = candidates[0]
     return best_word, best_dist, "Corrected"
 
-# ====================== STREAMLIT UI (Attractive) ======================
-st.set_page_config(
-    page_title="اردو اسپیل چیکر",
-    page_icon="🧠",
-    layout="centered",
-    initial_sidebar_state="collapsed"
-)
+# ====================== STREAMLIT APP ======================
+st.set_page_config(page_title="اردو اسپیل چیکر", layout="centered", page_icon="🧠")
 
-# Custom CSS for better look
-st.markdown("""
-    <style>
-    .main {padding-top: 2rem;}
-    .stButton>button {
-        width: 100%;
-        height: 50px;
-        font-size: 16px;
-        border-radius: 10px;
-    }
-    .example-btn {
-        background-color: #f0f2f6;
-        border: 1px solid #e0e3e8;
-        color: #262730;
-    }
-    .stTextArea textarea {
-        font-size: 18px;
-    }
-    </style>
-""", unsafe_allow_html=True)
+st.title("🧠 اردو اسپیل چیکر")
+st.markdown("**Minimum Edit Distance** کے ذریعے اردو ٹیکسٹ کی غلطیاں درست کریں")
 
-# Header
-st.markdown("<h1 style='text-align: center; color: #1E88E5;'>🧠 اردو اسپیل چیکر</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; font-size: 18px; color: #555;'>Minimum Edit Distance کے ذریعے اردو کی غلطیاں درست کریں</p>", unsafe_allow_html=True)
+# Text Input
+if 'input_text' not in st.session_state:
+    st.session_state.input_text = ""
 
-st.divider()
-
-# Input Section
 input_text = st.text_area(
     "اردو متن درج کریں:", 
+    value=st.session_state.input_text,
     placeholder="مثال: مین نی کھانا کھا لیا ہے",
-    height=140,
-    key="main_input"
+    height=130
 )
 
 # Check Button
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    if st.button("✅ Spelling Check کریں", type="primary", use_container_width=True):
-        if input_text and input_text.strip():
-            words = input_text.strip().split()
-            corrected = []
-            details = []
+if st.button("✅ Spelling Check کریں", type="primary", use_container_width=True):
+    if input_text.strip():
+        words = input_text.strip().split()
+        corrected = []
+        details = []
 
-            for word in words:
-                fixed, dist, status = correct_spelling(word)
-                if status in ["Corrected", "Special Rule"]:
-                    corrected.append(fixed)
-                    details.append(f"❌ **{word}** → ✅ **{fixed}** (dist={dist})")
-                else:
-                    corrected.append(word)
-                    details.append(f"✅ **{word}** (صحیح)")
+        for word in words:
+            fixed, dist, status = correct_spelling(word)
+            if status in ["Corrected", "Special Rule"]:
+                corrected.append(fixed)
+                details.append(f"❌ {word} → ✅ {fixed} (dist={dist})")
+            else:
+                corrected.append(word)
+                details.append(f"✅ {word} (صحیح)")
 
-            st.success("**درست شدہ جملہ:**")
-            st.write(f"### {' '.join(corrected)}")
+        st.success("**درست شدہ جملہ:**")
+        st.write(" ".join(corrected))
 
-            st.subheader("📋 تفصیلی رپورٹ")
-            for d in details:
-                st.markdown(d)
-        else:
-            st.warning("براہ مہربانی کچھ متن درج کریں۔")
+        st.subheader("تفصیلی رپورٹ")
+        for d in details:
+            st.write(d)
+    else:
+        st.warning("براہ مہربانی کچھ متن درج کریں۔")
 
-st.divider()
-
-# Examples Section
-st.subheader("📌 مثالیں (کلیک کریں)")
+# ====================== EXAMPLES ======================
+st.subheader("📌 مثالیں")
 
 examples = [
     "مین نی کھانا کھا لیا ہے",
@@ -142,19 +112,15 @@ examples = [
     "اسلآم میں قرآن پڑھتا ہوں"
 ]
 
-# Display examples in nice buttons
+# Callback function
+def set_example(text):
+    st.session_state.input_text = text
+
+# Display buttons
 cols = st.columns(3)
 for i, ex in enumerate(examples):
     col = cols[i % 3]
-    if col.button(ex, key=f"ex_{i}", use_container_width=True):
-        st.session_state.main_input = ex
-        st.rerun()
+    col.button(ex, key=f"ex_{i}", on_click=set_example, args=(ex,))
 
 # Footer
-st.divider()
-st.markdown(
-    "<p style='text-align: center; color: #777; font-size: 14px;'>"
-    "Final Semester Project | FA23-BAI-007 - Aftab Ahmad"
-    "</p>",
-    unsafe_allow_html=True
-)
+st.caption("Final Semester Project | FA23-BAI-007 - Aftab Ahmad")
